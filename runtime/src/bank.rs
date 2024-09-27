@@ -5488,10 +5488,34 @@ impl Bank {
 
                 let lamports_per_signature =
                     lamports_per_signature.ok_or(TransactionError::BlockhashNotFound)?;
+
+                trace!("Dump tx {:?}", tx);
+                trace!("Dump execution_result {:?}", execution_result);
+
+                // Unpack `executed_units` after the trace log
+                let executed_units = match &execution_result {
+                    TransactionExecutionResult::Executed { details, .. } => details.executed_units,
+                    TransactionExecutionResult::NotExecuted(_) => 0, // Handle non-executed case
+                };
+
+                trace!("Executed units: {}", executed_units);
+
+                /*
+                // get tx cost
+                let mut tx_cost = UsageCostDetails::default();
+                CostModel::get_transaction_cost(
+                    &mut tx_cost,
+                    &tx,
+                    &FeatureSet::all_enabled(),
+                );
+                */
+
                 let fee = self.get_fee_for_message_with_lamports_per_signature(
                     tx.message(),
                     lamports_per_signature,
                 );
+
+                //let fee = executed_units * 100;
 
                 // In case of instruction error, even though no accounts
                 // were stored we still need to charge the payer the
@@ -5505,6 +5529,7 @@ impl Bank {
                 }
 
                 fees += fee;
+                trace!("fees fee {} {}", fees, fee);
                 Ok(())
             })
             .collect();

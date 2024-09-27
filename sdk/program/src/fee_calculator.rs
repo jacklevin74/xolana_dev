@@ -18,6 +18,7 @@ pub struct FeeCalculator {
 
 impl FeeCalculator {
     pub fn new(lamports_per_signature: u64) -> Self {
+        trace!("new feecalculator lamports_per_signature: {}", lamports_per_signature);
         Self {
             lamports_per_signature,
         }
@@ -28,6 +29,7 @@ impl FeeCalculator {
         note = "Please do not use, will no longer be available in the future"
     )]
     pub fn calculate_fee(&self, message: &Message) -> u64 {
+        trace!("calculate_fee lamports_per_signature: {}", self.lamports_per_signature);
         let mut num_signatures: u64 = 0;
         for instruction in &message.instructions {
             let program_index = instruction.program_id_index as usize;
@@ -71,7 +73,7 @@ pub struct FeeRateGovernor {
     pub burn_percent: u8,
 }
 
-pub const DEFAULT_TARGET_LAMPORTS_PER_SIGNATURE: u64 = 10_000;
+pub const DEFAULT_TARGET_LAMPORTS_PER_SIGNATURE: u64 = 100;
 pub const DEFAULT_TARGET_SIGNATURES_PER_SLOT: u64 = 50 * DEFAULT_MS_PER_SLOT;
 
 // Percentage of tx fees to burn

@@ -676,7 +676,7 @@ impl JsonRpcRequestProcessor {
             &bank,
             RpcBlockhashFeeCalculator {
                 blockhash: blockhash.to_string(),
-                fee_calculator: FeeCalculator::new(lamports_per_signature),
+                fee_calculator: FeeCalculator::new(50),
             },
         ))
     }
@@ -698,7 +698,7 @@ impl JsonRpcRequestProcessor {
             &bank,
             RpcFees {
                 blockhash: blockhash.to_string(),
-                fee_calculator: FeeCalculator::new(lamports_per_signature),
+                fee_calculator: FeeCalculator::new(50),
                 last_valid_slot,
                 last_valid_block_height,
             },
@@ -715,7 +715,7 @@ impl JsonRpcRequestProcessor {
         Ok(new_response(
             &bank,
             lamports_per_signature.map(|lamports_per_signature| RpcFeeCalculator {
-                fee_calculator: FeeCalculator::new(lamports_per_signature),
+                fee_calculator: FeeCalculator::new(50),
             }),
         ))
     }
@@ -6730,7 +6730,8 @@ pub mod tests {
         let recent_blockhash = bank.confirmed_last_blockhash();
         let RpcHandler { meta, io, .. } = rpc;
 
-        let lamports_per_signature = bank.get_lamports_per_signature();
+        //let lamports_per_signature = bank.get_lamports_per_signature();
+        let lamports_per_signature = 50;
         let fee_calculator = RpcFeeCalculator {
             fee_calculator: FeeCalculator::new(lamports_per_signature),
         };

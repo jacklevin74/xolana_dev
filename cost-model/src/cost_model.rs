@@ -32,6 +32,7 @@ use {
 pub struct CostModel;
 
 impl CostModel {
+    /*
     pub fn calculate_cost(
         transaction: &SanitizedTransaction,
         feature_set: &FeatureSet,
@@ -40,6 +41,8 @@ impl CostModel {
             TransactionCost::SimpleVote {
                 writable_accounts: Self::get_writable_accounts(transaction),
             }
+
+
         } else {
             let mut tx_cost = UsageCostDetails::new_with_default_capacity();
 
@@ -52,6 +55,37 @@ impl CostModel {
             TransactionCost::Transaction(tx_cost)
         }
     }
+
+pub enum TransactionCost {
+    SimpleVote { writable_accounts: Vec<Pubkey> },
+    Transaction(UsageCostDetails),
+}
+
+*/
+    pub fn calculate_cost(
+    transaction: &SanitizedTransaction,
+    feature_set: &FeatureSet,
+) -> TransactionCost {
+    if transaction.is_simple_vote_transaction() {
+        let writable_accounts = Self::get_writable_accounts(transaction);
+        let tx_cost = UsageCostDetails::new_with_default_capacity();
+        debug!("simple vote transaction {:?} has writable accounts {:?} and cost {:?}", transaction, writable_accounts, tx_cost);
+        TransactionCost::SimpleVote {
+            writable_accounts,
+        }
+    } else {
+        let mut tx_cost = UsageCostDetails::new_with_default_capacity();
+
+        Self::get_signature_cost(&mut tx_cost, transaction);
+        Self::get_write_lock_cost(&mut tx_cost, transaction, feature_set);
+        Self::get_transaction_cost(&mut tx_cost, transaction, feature_set);
+        tx_cost.account_data_size = Self::calculate_account_data_size(transaction);
+
+        debug!("transaction {:?} has cost {:?}", transaction, tx_cost);
+        TransactionCost::Transaction(tx_cost)
+    }
+}
+
 
     fn get_signature_cost(tx_cost: &mut UsageCostDetails, transaction: &SanitizedTransaction) {
         let signatures_count_detail = transaction.message().get_signature_details();

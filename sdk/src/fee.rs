@@ -1,6 +1,8 @@
 //! Fee structures.
 
+use std::time::{SystemTime, UNIX_EPOCH};
 use crate::native_token::sol_to_lamports;
+use log::trace;
 #[cfg(not(target_os = "solana"))]
 use solana_program::message::SanitizedMessage;
 
@@ -39,6 +41,7 @@ impl FeeStructure {
         sol_per_write_lock: f64,
         compute_fee_bins: Vec<(u64, f64)>,
     ) -> Self {
+        trace!("Creating FeeStructure with sol_per_signature: {}", sol_per_signature);
         let compute_fee_bins = compute_fee_bins
             .iter()
             .map(|(limit, sol)| FeeBin {
@@ -54,7 +57,7 @@ impl FeeStructure {
     }
 
     pub fn get_max_fee(&self, num_signatures: u64, num_write_locks: u64) -> u64 {
-        num_signatures
+        let max_fee = num_signatures
             .saturating_mul(self.lamports_per_signature)
             .saturating_add(num_write_locks.saturating_mul(self.lamports_per_write_lock))
             .saturating_add(
@@ -62,18 +65,23 @@ impl FeeStructure {
                     .last()
                     .map(|bin| bin.fee)
                     .unwrap_or_default(),
-            )
+            );
+        trace!("Calculated max_fee: {}", max_fee);
+        max_fee
     }
 
     pub fn calculate_memory_usage_cost(
         loaded_accounts_data_size_limit: usize,
         heap_cost: u64,
     ) -> u64 {
-        (loaded_accounts_data_size_limit as u64)
+        let memory_usage_cost = (loaded_accounts_data_size_limit as u64)
             .saturating_add(ACCOUNT_DATA_COST_PAGE_SIZE.saturating_sub(1))
             .saturating_div(ACCOUNT_DATA_COST_PAGE_SIZE)
-            .saturating_mul(heap_cost)
+            .saturating_mul(heap_cost);
+        trace!("Calculated memory_usage_cost: {}", memory_usage_cost);
+        memory_usage_cost
     }
+
 
     /// Calculate fee for `SanitizedMessage`
     #[cfg(not(target_os = "solana"))]
@@ -84,19 +92,30 @@ impl FeeStructure {
         budget_limits: &FeeBudgetLimits,
         include_loaded_account_data_size_in_fee: bool,
     ) -> u64 {
-        // Fee based on compute units and signatures
-        let congestion_multiplier = if lamports_per_signature == 0 {
-            0.0 // test only
-        } else {
-            1.0 // multiplier that has no effect
-        };
+        trace!("Calculating fee with lamports_per_signature: {} and self.lamports_per_signature {} ", lamports_per_signature, self.lamports_per_signature);
+        trace!("Dump message: {:?}", message);
+        trace!("Dump keys: {:?}", message.account_keys());
+
+        let vote_program_id = &solana_sdk::vote::program::id();
+        let contains_vote_program = message.account_keys().iter().any(|key| key == vote_program_id);
+
+
+        // Query the current Unix time and reduce it to a value between 1 and 100
+        let current_time = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards");
+        let unix_time = current_time.as_secs(); // You can use `as_millis()` if higher precision is needed
+
+        // Use mod 100 and add 1 to ensure the result is between 1 and 100
+        let congestion_multiplier = (unix_time % 100 + 1) as f64 / 1.0;
 
         let signature_fee = message
             .num_signatures()
-            .saturating_mul(self.lamports_per_signature);
+            .saturating_mul(lamports_per_signature);
+        trace!("Calculated signature_fee: {}", signature_fee);
+
         let write_lock_fee = message
             .num_write_locks()
             .saturating_mul(self.lamports_per_write_lock);
+        trace!("Calculated write_lock_fee: {}", write_lock_fee);
 
         // `compute_fee` covers costs for both requested_compute_units and
         // requested_loaded_account_data_size
@@ -108,8 +127,13 @@ impl FeeStructure {
         } else {
             0_u64
         };
+        trace!("Calculated loaded_accounts_data_size_cost: {}", loaded_accounts_data_size_cost);
+
         let total_compute_units =
             loaded_accounts_data_size_cost.saturating_add(budget_limits.compute_unit_limit);
+
+        trace!("total_compute_units {}", total_compute_units);
+
         let compute_fee = self
             .compute_fee_bins
             .iter()
@@ -121,20 +145,33 @@ impl FeeStructure {
                     .map(|bin| bin.fee)
                     .unwrap_or_default()
             });
+        trace!("Calculated compute_fee: {}", compute_fee);
 
-        ((budget_limits
+        let mut total_fee = ((budget_limits
             .prioritization_fee
             .saturating_add(signature_fee)
             .saturating_add(write_lock_fee)
             .saturating_add(compute_fee) as f64)
             * congestion_multiplier)
-            .round() as u64
+            .round() as u64;
+
+
+        // If the message contains the vote program, set the total fee to 0
+        if contains_vote_program {
+            trace!("Vote program detected, setting total_fee to 0");
+            total_fee = 0;
+        } else {
+            trace!("Calculated total_fee: {} with congestion_multiplier: {}", total_fee, congestion_multiplier);
+        }
+
+
+        total_fee
     }
 }
 
 impl Default for FeeStructure {
     fn default() -> Self {
-        Self::new(0.000005, 0.0, vec![(1_400_000, 0.0)])
+        Self::new(0.000000005, 0.0, vec![(1_400_000, 0.0)])
     }
 }
 

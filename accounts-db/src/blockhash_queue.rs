@@ -80,7 +80,8 @@ impl BlockhashQueue {
         self.ages.insert(
             *hash,
             HashAge {
-                fee_calculator: FeeCalculator::new(lamports_per_signature),
+                //fee_calculator: FeeCalculator::new(lamports_per_signature),
+                fee_calculator: FeeCalculator::new(50),
                 hash_index: 0,
                 timestamp: timestamp(),
             },
@@ -104,7 +105,7 @@ impl BlockhashQueue {
         self.ages.insert(
             *hash,
             HashAge {
-                fee_calculator: FeeCalculator::new(lamports_per_signature),
+                fee_calculator: FeeCalculator::new(50),
                 hash_index: self.last_hash_index,
                 timestamp: timestamp(),
             },
@@ -120,7 +121,7 @@ impl BlockhashQueue {
     #[allow(deprecated)]
     pub fn get_recent_blockhashes(&self) -> impl Iterator<Item = recent_blockhashes::IterItem> {
         (self.ages).iter().map(|(k, v)| {
-            recent_blockhashes::IterItem(v.hash_index, k, v.fee_calculator.lamports_per_signature)
+            recent_blockhashes::IterItem(v.hash_index, k, 50)
         })
     }
 

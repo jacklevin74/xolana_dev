@@ -88,7 +88,7 @@ impl Committer {
             loaded_transactions,
             execution_results,
             last_blockhash,
-            lamports_per_signature,
+            50,
             CommitTransactionCounts {
                 committed_transactions_count: executed_transactions_count as u64,
                 committed_non_vote_transactions_count: executed_non_vote_transactions_count as u64,
