@@ -3,6 +3,13 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 use crate::native_token::sol_to_lamports;
 use log::trace;
+
+use {
+    super::*,
+    solana_cost_model::transaction_cost::UsageCostDetails,
+};
+
+
 #[cfg(not(target_os = "solana"))]
 use solana_program::message::SanitizedMessage;
 
@@ -106,6 +113,9 @@ impl FeeStructure {
 
         // Use mod 100 and add 1 to ensure the result is between 1 and 100
         let congestion_multiplier = (unix_time % 100 + 1) as f64 / 1.0;
+
+        let mut tx_cost = UsageCostDetails::default();
+        CostModel::get_signature_cost_from_message(&mut tx_cost, &message);
 
         let signature_fee = message
             .num_signatures()

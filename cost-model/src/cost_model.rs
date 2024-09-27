@@ -28,6 +28,7 @@ use {
         transaction::SanitizedTransaction,
     },
 };
+use solana_program::message::SanitizedMessage;
 
 pub struct CostModel;
 
@@ -108,6 +109,33 @@ pub enum TransactionCost {
                     .saturating_mul(ED25519_VERIFY_COST),
             );
     }
+
+pub fn get_signature_cost_from_message(tx_cost: &mut UsageCostDetails, message: &SanitizedMessage) {
+    // Get the signature details from the message
+    let signatures_count_detail = message.get_signature_details();
+
+    // Set the details to the tx_cost structure
+    tx_cost.num_transaction_signatures = signatures_count_detail.num_transaction_signatures();
+    tx_cost.num_secp256k1_instruction_signatures = signatures_count_detail.num_secp256k1_instruction_signatures();
+    tx_cost.num_ed25519_instruction_signatures = signatures_count_detail.num_ed25519_instruction_signatures();
+
+    // Calculate the signature cost based on the number of signatures
+    tx_cost.signature_cost = signatures_count_detail
+        .num_transaction_signatures()
+        .saturating_mul(SIGNATURE_COST)
+        .saturating_add(
+            signatures_count_detail
+                .num_secp256k1_instruction_signatures()
+                .saturating_mul(SECP256K1_VERIFY_COST),
+        )
+        .saturating_add(
+            signatures_count_detail
+                .num_ed25519_instruction_signatures()
+                .saturating_mul(ED25519_VERIFY_COST),
+        );
+}
+
+
 
     fn get_writable_accounts(transaction: &SanitizedTransaction) -> Vec<Pubkey> {
         let message = transaction.message();

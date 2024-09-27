@@ -5986,6 +5986,7 @@ dependencies = [
  "solana-loader-v4-program",
  "solana-logger",
  "solana-metrics",
+ "solana-program",
  "solana-program-runtime",
  "solana-sdk",
  "solana-stake-program",
