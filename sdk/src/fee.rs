@@ -1,6 +1,6 @@
 //! Fee structures.
 
-use std::time::{SystemTime, UNIX_EPOCH};
+//use std::time::{SystemTime, UNIX_EPOCH};
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 
@@ -18,7 +18,8 @@ use solana_program::pubkey::Pubkey;
 use crate::{compute_budget, feature_set};
 use crate::compute_budget::ComputeBudgetInstruction;
 use crate::feature_set::{FEATURE_NAMES, full_inflation, FULL_INFLATION_FEATURE_PAIRS, include_loaded_accounts_data_size_in_fee_calculation, reduce_stake_warmup_cooldown};
-use crate::transaction::{SanitizedTransaction, TransactionError};
+use crate::transaction::{TransactionError};
+// use crate::transaction::{SanitizedTransaction, TransactionError};
 
 pub const COMPUTE_UNIT_TO_US_RATIO: u64 = 30;
 pub const SIGNATURE_COST: u64 = COMPUTE_UNIT_TO_US_RATIO * 24;
@@ -153,6 +154,7 @@ pub fn get_signature_cost_from_message(tx_cost: &mut UsageCostDetails, message: 
         );
 }
 
+/*
 fn get_writable_accounts(message: &SanitizedMessage) -> Vec<Pubkey> {
     message
         .account_keys()
@@ -167,6 +169,7 @@ fn get_writable_accounts(message: &SanitizedMessage) -> Vec<Pubkey> {
         })
         .collect()
 }
+*/
 
 fn get_write_lock_cost(
     tx_cost: &mut UsageCostDetails,
@@ -499,11 +502,11 @@ impl FeeStructure {
 
 
         // Query the current Unix time and reduce it to a value between 1 and 100
-        let current_time = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards");
-        let unix_time = current_time.as_secs(); // You can use `as_millis()` if higher precision is needed
+        // let current_time = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards");
+        // let unix_time = current_time.as_secs(); // You can use `as_millis()` if higher precision is needed
 
         // Use mod 100 and add 1 to ensure the result is between 1 and 100
-        let congestion_multiplier = (unix_time % 100 + 1) as f64 / 1.0;
+        // let congestion_multiplier = (unix_time % 100 + 1) as f64 / 1.0;
 
         let mut tx_cost = UsageCostDetails::default();
         get_signature_cost_from_message(&mut tx_cost, &message);

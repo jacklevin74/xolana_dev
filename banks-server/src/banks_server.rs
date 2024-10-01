@@ -239,8 +239,7 @@ impl Banks for BanksServer {
     ) -> (FeeCalculator, Hash, u64) {
         let bank = self.bank(commitment);
         let blockhash = bank.last_blockhash();
-        //let lamports_per_signature = bank.get_lamports_per_signature();
-        let lamports_per_signature = 50;
+        let lamports_per_signature = bank.get_lamports_per_signature();
         let last_valid_block_height = bank
             .get_blockhash_last_valid_block_height(&blockhash)
             .unwrap();
