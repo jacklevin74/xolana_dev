@@ -8,8 +8,7 @@ use {crate::block_cost_limits, solana_sdk::pubkey::Pubkey};
 /// SimpleVote has a simpler and pre-determined format: it has 1 or 2 signatures,
 /// 2 write locks, a vote instruction and less than 32k (page size) accounts to load.
 /// It's cost therefore can be static #33269.
-const SIMPLE_VOTE_USAGE_COST: u64 = 0;
-//const SIMPLE_VOTE_USAGE_COST: u64 = 3428;
+const SIMPLE_VOTE_USAGE_COST: u64 = 3428;
 
 #[derive(Debug)]
 pub enum TransactionCost {
@@ -55,7 +54,7 @@ impl TransactionCost {
 
     pub fn loaded_accounts_data_size_cost(&self) -> u64 {
         match self {
-            Self::SimpleVote { .. } => 0, // simple-vote loads less than 32K account data,
+            Self::SimpleVote { .. } => 8, // simple-vote loads less than 32K account data,
             // the cost round up to be one page (32K) cost: 8CU
             Self::Transaction(usage_cost) => usage_cost.loaded_accounts_data_size_cost,
         }
@@ -63,24 +62,21 @@ impl TransactionCost {
 
     pub fn signature_cost(&self) -> u64 {
         match self {
-            //Self::SimpleVote { .. } => block_cost_limits::SIGNATURE_COST,
-            Self::SimpleVote { .. } => 0 ,
+            Self::SimpleVote { .. } => block_cost_limits::SIGNATURE_COST,
             Self::Transaction(usage_cost) => usage_cost.signature_cost,
         }
     }
 
     pub fn write_lock_cost(&self) -> u64 {
         match self {
-            //Self::SimpleVote { .. } => block_cost_limits::WRITE_LOCK_UNITS.saturating_mul(2),
-            Self::SimpleVote { .. } => 0,
+            Self::SimpleVote { .. } => block_cost_limits::WRITE_LOCK_UNITS.saturating_mul(2),
             Self::Transaction(usage_cost) => usage_cost.write_lock_cost,
         }
     }
 
     pub fn builtins_execution_cost(&self) -> u64 {
         match self {
-            //Self::SimpleVote { .. } => solana_vote_program::vote_processor::DEFAULT_COMPUTE_UNITS,
-            Self::SimpleVote { .. } => 0,
+            Self::SimpleVote { .. } => solana_vote_program::vote_processor::DEFAULT_COMPUTE_UNITS,
             Self::Transaction(usage_cost) => usage_cost.builtins_execution_cost,
         }
     }
@@ -94,8 +90,7 @@ impl TransactionCost {
 
     pub fn num_transaction_signatures(&self) -> u64 {
         match self {
-            Self::SimpleVote { .. } => 0,
-            //Self::SimpleVote { .. } => 1,
+            Self::SimpleVote { .. } => 1,
             Self::Transaction(usage_cost) => usage_cost.num_transaction_signatures,
         }
     }

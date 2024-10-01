@@ -991,7 +991,7 @@ pub fn process_fees(
             CliFees::some(
                 result.context.slot,
                 *recent_blockhash,
-                50,
+                fee_calculator.lamports_per_signature,
                 None,
                 None,
             )
@@ -1004,7 +1004,7 @@ pub fn process_fees(
         CliFees::some(
             result.context.slot,
             result.value.blockhash,
-            50,
+            result.value.fee_calculator.lamports_per_signature,
             None,
             Some(result.value.last_valid_block_height),
         )

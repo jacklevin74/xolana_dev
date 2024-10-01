@@ -50,7 +50,7 @@ impl Entry {
     pub fn new(blockhash: &Hash, lamports_per_signature: u64) -> Self {
         Self {
             blockhash: *blockhash,
-            fee_calculator: FeeCalculator::new(50),
+            fee_calculator: FeeCalculator::new(lamports_per_signature),
         }
     }
 }

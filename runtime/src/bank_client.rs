@@ -124,8 +124,7 @@ impl SyncClient for BankClient {
     fn get_recent_blockhash(&self) -> Result<(Hash, FeeCalculator)> {
         Ok((
             self.bank.last_blockhash(),
-            //FeeCalculator::new(self.bank.get_lamports_per_signature()),
-            FeeCalculator::new(50),
+            FeeCalculator::new(self.bank.get_lamports_per_signature()),
         ))
     }
 
@@ -141,8 +140,7 @@ impl SyncClient for BankClient {
             .expect("bank blockhash queue should contain blockhash");
         Ok((
             blockhash,
-            //FeeCalculator::new(self.bank.get_lamports_per_signature()),
-            FeeCalculator::new(50),
+            FeeCalculator::new(self.bank.get_lamports_per_signature()),
             last_valid_slot,
         ))
     }
@@ -249,8 +247,7 @@ impl SyncClient for BankClient {
         if recent_blockhash != *blockhash {
             Ok((
                 recent_blockhash,
-                //FeeCalculator::new(self.bank.get_lamports_per_signature()),
-                FeeCalculator::new(50),
+                FeeCalculator::new(self.bank.get_lamports_per_signature()),
             ))
         } else {
             Err(TransportError::IoError(io::Error::new(
