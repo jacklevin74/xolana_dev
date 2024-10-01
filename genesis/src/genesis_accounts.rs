@@ -1,3 +1,4 @@
+#![allow(warnings)]
 use {
     crate::{
         stakes::{create_and_add_stakes, StakerInfo},

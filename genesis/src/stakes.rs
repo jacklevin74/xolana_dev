@@ -1,4 +1,7 @@
 //! stakes generator
+#![allow(warnings)]
+#![allow(unused)]
+
 use {
     crate::{
         address_generator::AddressGenerator,
