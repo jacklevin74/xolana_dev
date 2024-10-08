@@ -279,6 +279,24 @@ pub fn process_compute_budget_instructions<'a>(
     })
 }
 
+fn get_compute_unit_price_from_message(
+    tx_cost: &mut UsageCostDetails,
+    message: &SanitizedMessage,
+) {
+    // Iterate through instructions and search for ComputeBudgetInstruction::SetComputeUnitPrice
+    for (program_id, instruction) in message.program_instructions_iter() {
+        if compute_budget::check_id(program_id) {
+            if let Ok(ComputeBudgetInstruction::SetComputeUnitPrice(price)) =
+                try_from_slice_unchecked(&instruction.data)
+            {
+                // Set the compute unit price in tx_cost
+                tx_cost.compute_unit_price = price;
+            }
+        }
+    }
+}
+
+
 fn get_transaction_cost(
     tx_cost: &mut UsageCostDetails,
     message: &SanitizedMessage,
@@ -364,6 +382,7 @@ pub struct UsageCostDetails {
     pub num_transaction_signatures: u64,
     pub num_secp256k1_instruction_signatures: u64,
     pub num_ed25519_instruction_signatures: u64,
+    pub compute_unit_price: u64,
 }
 
 impl Default for UsageCostDetails {
@@ -380,6 +399,7 @@ impl Default for UsageCostDetails {
             num_transaction_signatures: 0u64,
             num_secp256k1_instruction_signatures: 0u64,
             num_ed25519_instruction_signatures: 0u64,
+            compute_unit_price: 0u64,
         }
     }
 }
@@ -512,6 +532,8 @@ impl FeeStructure {
         get_signature_cost_from_message(&mut tx_cost, &message);
         get_write_lock_cost(&mut tx_cost, message, &FeatureSet::default());
         get_transaction_cost(&mut tx_cost, message, &FeatureSet::default());
+        get_compute_unit_price_from_message(&mut tx_cost, &message);
+
         trace!("UsageCostDetails {:?}", tx_cost);
 
         let signature_fee = message
@@ -571,9 +593,11 @@ impl FeeStructure {
         //    .saturating_add (derived_cu * budget_limits.prioritization_fee)
         //     as u64;
 
+
         let mut total_fee = derived_cu
             .saturating_mul(10) // ensures multiplication doesn't overflow
-            .saturating_add(derived_cu.saturating_mul(budget_limits.prioritization_fee as u64));
+            .saturating_add(derived_cu.saturating_mul(tx_cost.compute_unit_price as u64)
+            .saturating_div(1_000_000));
 
 
         // derived_cu * (10 + budget_limits.prioritization_fee)
@@ -583,7 +607,7 @@ impl FeeStructure {
             trace!("Vote program detected, setting total_fee to 0");
             total_fee = 0;
         } else {
-            trace!("Calculated total_fee: {} with compute units: {} prioritization_fee {}", total_fee, derived_cu, budget_limits.prioritization_fee);
+            trace!("Calculated total_fee: {} with compute units: {} compute unit price {}", total_fee, derived_cu, tx_cost.compute_unit_price);
         }
 
 
