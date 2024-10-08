@@ -3378,41 +3378,27 @@ impl ReplayStage {
         new_stats
     }
 
+    fn cache_tower_stats(
+        progress: &mut ProgressMap,
+        tower: &Tower,
+        slot: Slot,
+        ancestors: &HashMap<u64, HashSet<u64>>,
+    ) {
+        let stats = progress
+            .get_fork_stats_mut(slot)
+            .expect("All frozen banks must exist in the Progress map");
 
-fn cache_tower_stats(
-    progress: &mut ProgressMap,
-    tower: &Tower,
-    slot: Slot,
-    ancestors: &HashMap<u64, HashSet<u64>>,
-) {
-    // Perform the second check first (before mutably borrowing `progress`)
-    let new_vote_threshold = tower.check_vote_stake_thresholds2(slot, progress);
-
-    // Now borrow `progress` mutably for `stats`
-    let stats = progress
-        .get_fork_stats_mut(slot)
-        .expect("All frozen banks must exist in the Progress map");
-
-    // Update stats with tower checks
-    stats.vote_threshold =
-        tower.check_vote_stake_thresholds(slot, &stats.voted_stakes, stats.total_stake);
-    stats.is_locked_out = tower.is_locked_out(
-        slot,
-        ancestors
-            .get(&slot)
-            .expect("Ancestors map should contain slot for is_locked_out() check"),
-    );
-
-    // Debug the vote thresholds
-    debug!("Old stats.vote_threshold {:?} ", stats.vote_threshold);
-    debug!("New stats.vote_threshold {:?} ", new_vote_threshold);
-
-    // Continue updating `stats`
-    stats.has_voted = tower.has_voted(slot);
-    stats.is_recent = tower.is_recent(slot);
-}
-
-
+        stats.vote_threshold =
+            tower.check_vote_stake_thresholds(slot, &stats.voted_stakes, stats.total_stake);
+        stats.is_locked_out = tower.is_locked_out(
+            slot,
+            ancestors
+                .get(&slot)
+                .expect("Ancestors map should contain slot for is_locked_out() check"),
+        );
+        stats.has_voted = tower.has_voted(slot);
+        stats.is_recent = tower.is_recent(slot);
+    }
 
     fn update_propagation_status(
         progress: &mut ProgressMap,
