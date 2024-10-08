@@ -594,10 +594,16 @@ impl FeeStructure {
         //     as u64;
 
 
+        let adjusted_compute_unit_price = if derived_cu < 1000 && tx_cost.compute_unit_price < 1_000_000 {
+                1_000_000
+            } else {
+                tx_cost.compute_unit_price
+            };
+
         let mut total_fee = derived_cu
             .saturating_mul(10) // ensures multiplication doesn't overflow
-            .saturating_add(derived_cu.saturating_mul(tx_cost.compute_unit_price as u64)
-            .saturating_div(1_000_000));
+            .saturating_add(derived_cu.saturating_mul(adjusted_compute_unit_price as u64)
+            .saturating_div(1_000_000)); // change to 1_000_000 to convert to micro lamports
 
 
         // derived_cu * (10 + budget_limits.prioritization_fee)
