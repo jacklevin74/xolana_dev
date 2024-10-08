@@ -567,9 +567,16 @@ impl FeeStructure {
         let derived_cu = tx_cost.builtins_execution_cost
             .saturating_add(tx_cost.bpf_execution_cost);
 
-        let mut total_fee = (derived_cu * 10)
-            .saturating_add(budget_limits.prioritization_fee)
-             as u64;
+        //let mut total_fee = (derived_cu * 10) // base fee calculation CU * M (10)
+        //    .saturating_add (derived_cu * budget_limits.prioritization_fee)
+        //     as u64;
+
+        let mut total_fee = derived_cu
+            .saturating_mul(10) // ensures multiplication doesn't overflow
+            .saturating_add(derived_cu.saturating_mul(budget_limits.prioritization_fee as u64));
+
+
+        // derived_cu * (10 + budget_limits.prioritization_fee)
 
         // If the message contains the vote program, set the total fee to 0
         if contains_vote_program {
